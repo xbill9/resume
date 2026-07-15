@@ -1,0 +1,32 @@
+#!/bin/bash
+# Push the resume markdown sources to Google Drive as native Google Docs.
+#
+# Each .md is built to .docx (our converter preserves headings, bullets,
+# hyperlinks) and uploaded with server-side conversion, so Drive shows a
+# real Google Doc named after the file (no .docx extension).
+#
+# One-time setup: rclone config   (create a remote named "gdrive", type drive)
+# Usage:          ./push-gdocs    (pushes scrubbed public versions)
+#                 ./push-gdocs --private   (pushes full-contact versions)
+set -euo pipefail
+REPO="$(dirname "$(realpath "$0")")"
+REMOTE="gdrive:resume"
+
+SRC_DIR="$REPO"
+if [ "${1:-}" = "--private" ]; then
+  SRC_DIR="$REPO/private"
+  REMOTE="gdrive:resume/private"
+fi
+
+rclone listremotes | grep -q '^gdrive:' || {
+  echo "No 'gdrive' remote configured. Run: rclone config" >&2; exit 1; }
+
+for md in "$SRC_DIR"/resume_*.md; do
+  base="$(basename "$md" .md)"
+  echo "==> $base -> Google Doc ($REMOTE)"
+  python3 "$REPO/md2docx.py" "$md" >/dev/null
+  rclone copyto "$SRC_DIR/$base.docx" "$REMOTE/$base.docx" \
+    --drive-import-formats docx
+done
+
+echo "Done. Docs are in Drive under 'resume/'."
