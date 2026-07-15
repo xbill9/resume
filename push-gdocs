@@ -1,32 +1,113 @@
-#!/bin/bash
-# Push the resume markdown sources to Google Drive as native Google Docs.
-#
-# Each .md is built to .docx (our converter preserves headings, bullets,
-# hyperlinks) and uploaded with server-side conversion, so Drive shows a
-# real Google Doc named after the file (no .docx extension).
-#
-# One-time setup: rclone config   (create a remote named "gdrive", type drive)
-# Usage:          ./push-gdocs    (pushes scrubbed public versions)
-#                 ./push-gdocs --private   (pushes full-contact versions)
-set -euo pipefail
-REPO="$(dirname "$(realpath "$0")")"
-REMOTE="gdrive:resume"
+#!/usr/bin/env python3
+"""Push the resume markdown sources to Google Drive as native Google Docs.
 
-SRC_DIR="$REPO"
-if [ "${1:-}" = "--private" ]; then
-  SRC_DIR="$REPO/private"
-  REMOTE="gdrive:resume/private"
-fi
+Each .md is built to .docx (md2docx.py preserves headings, bullets,
+hyperlinks) and uploaded via the Drive API with conversion, producing a
+real Google Doc named after the file. Re-pushing UPDATES the same Doc in
+place, so document IDs and shared links stay stable.
 
-rclone listremotes | grep -q '^gdrive:' || {
-  echo "No 'gdrive' remote configured. Run: rclone config" >&2; exit 1; }
+Auth comes from the rclone "gdrive" remote (scope drive.file — the token
+can only touch files this pipeline created).
 
-for md in "$SRC_DIR"/resume_*.md; do
-  base="$(basename "$md" .md)"
-  echo "==> $base -> Google Doc ($REMOTE)"
-  python3 "$REPO/md2docx.py" "$md" >/dev/null
-  rclone copyto "$SRC_DIR/$base.docx" "$REMOTE/$base.docx" \
-    --drive-import-formats docx
-done
+Usage:  ./push-gdocs             push scrubbed public versions -> resume/
+        ./push-gdocs --private   push full-contact versions    -> resume/private/
+"""
+import configparser
+import glob
+import json
+import os
+import subprocess
+import sys
+import urllib.parse
+import urllib.request
+import uuid
 
-echo "Done. Docs are in Drive under 'resume/'."
+REPO = os.path.dirname(os.path.abspath(__file__))
+API = "https://www.googleapis.com/drive/v3"
+UPLOAD = "https://www.googleapis.com/upload/drive/v3"
+DOC = "application/vnd.google-apps.document"
+FOLDER = "application/vnd.google-apps.folder"
+DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+
+def token():
+    # Any rclone call refreshes and persists the OAuth token first.
+    subprocess.run(["rclone", "lsd", "gdrive:"], capture_output=True)
+    conf = configparser.ConfigParser()
+    conf.read(os.path.expanduser("~/.config/rclone/rclone.conf"))
+    return json.loads(conf["gdrive"]["token"])["access_token"]
+
+
+def api(tok, method, url, body=None, ctype="application/json"):
+    data = body if isinstance(body, (bytes, type(None))) else json.dumps(body).encode()
+    req = urllib.request.Request(url, data=data, method=method, headers={
+        "Authorization": f"Bearer {tok}", "Content-Type": ctype})
+    with urllib.request.urlopen(req) as resp:
+        return json.loads(resp.read() or "{}")
+
+
+def find(tok, q):
+    url = f"{API}/files?q={urllib.parse.quote(q)}&fields=files(id,name)"
+    files = api(tok, "GET", url)["files"]
+    return files[0]["id"] if files else None
+
+
+def ensure_folder(tok, name, parent):
+    q = (f"name='{name}' and mimeType='{FOLDER}' and trashed=false"
+         + (f" and '{parent}' in parents" if parent else ""))
+    fid = find(tok, q)
+    if not fid:
+        meta = {"name": name, "mimeType": FOLDER}
+        if parent:
+            meta["parents"] = [parent]
+        fid = api(tok, "POST", f"{API}/files", meta)["id"]
+    return fid
+
+
+def multipart(meta, content):
+    boundary = uuid.uuid4().hex
+    body = (f"--{boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n"
+            f"{json.dumps(meta)}\r\n--{boundary}\r\nContent-Type: {DOCX}\r\n\r\n"
+            ).encode() + content + f"\r\n--{boundary}--".encode()
+    return body, f"multipart/related; boundary={boundary}"
+
+
+def push(tok, folder, docx_path, name):
+    with open(docx_path, "rb") as fh:
+        content = fh.read()
+    existing = find(tok, f"name='{name}' and '{folder}' in parents "
+                         f"and mimeType='{DOC}' and trashed=false")
+    if existing:
+        body, ctype = multipart({}, content)
+        api(tok, "PATCH", f"{UPLOAD}/files/{existing}?uploadType=multipart",
+            body, ctype)
+        doc_id = existing
+        action = "updated"
+    else:
+        meta = {"name": name, "mimeType": DOC, "parents": [folder]}
+        body, ctype = multipart(meta, content)
+        doc_id = api(tok, "POST", f"{UPLOAD}/files?uploadType=multipart",
+                     body, ctype)["id"]
+        action = "created"
+    print(f"  {action}: https://docs.google.com/document/d/{doc_id}/edit")
+
+
+def main():
+    private = "--private" in sys.argv
+    src_dir = os.path.join(REPO, "private") if private else REPO
+
+    tok = token()
+    folder = ensure_folder(tok, "resume", None)
+    if private:
+        folder = ensure_folder(tok, "private", folder)
+
+    for md in sorted(glob.glob(os.path.join(src_dir, "resume_*.md"))):
+        base = os.path.basename(md)[:-3]
+        print(f"==> {base}")
+        subprocess.run([sys.executable, os.path.join(REPO, "md2docx.py"), md],
+                       check=True, capture_output=True)
+        push(tok, folder, md[:-3] + ".docx", base)
+
+
+if __name__ == "__main__":
+    main()
