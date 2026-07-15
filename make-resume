@@ -1,0 +1,39 @@
+#!/bin/bash
+# Build a resume: md -> docx (ATS upload) -> pdf (human copy),
+# then show the extracted text layer, page count, and spelling report.
+#
+# Usage: ./make-resume [resume.md]   (defaults to resume_consolidated.md)
+set -e
+REPO="$(dirname "$(realpath "$0")")"
+SRC="$(realpath "${1:-$REPO/resume_consolidated.md}")"
+DIR="$(dirname "$SRC")"
+BASE="$(basename "$SRC" .md)"
+cd "$DIR"
+
+echo "==> docx"
+python3 "$REPO/md2docx.py" "$SRC"
+
+echo "==> pdf"
+soffice --headless --convert-to pdf --outdir "$DIR" "${BASE}.docx" >/dev/null
+
+echo "==> text layer (what an ATS parser sees) -> ${BASE}.txt"
+pdftotext "${BASE}.pdf" "${BASE}.txt"
+head -6 "${BASE}.txt"
+
+echo "==> page count"
+pdfinfo "${BASE}.pdf" | grep -E '^Pages'
+
+echo "==> spelling (unknown words, review by hand)"
+hunspell -d en_US -l "$SRC" | sort -u | tr '\n' ' '; echo
+
+# Full-contact build for actual applications (gitignored). PRIVATE_CONTACT holds
+# the complete contact line; the public sources carry the scrubbed one.
+if [ -f "$REPO/PRIVATE_CONTACT" ]; then
+  echo "==> private build (full contact) -> private/${BASE}.*"
+  mkdir -p "$REPO/private"
+  awk -v repl="$(head -1 "$REPO/PRIVATE_CONTACT")" \
+    '/^Email: \[/ && !done { print repl "  "; done=1; next } { print }' \
+    "$SRC" > "$REPO/private/${BASE}.md"
+  python3 "$REPO/md2docx.py" "$REPO/private/${BASE}.md" >/dev/null
+  soffice --headless --convert-to pdf --outdir "$REPO/private" "$REPO/private/${BASE}.docx" >/dev/null 2>&1
+fi

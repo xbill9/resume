@@ -1,0 +1,186 @@
+William McLean
+AI Developer Advocate & Chief Technology Officer | Google Developer Expert (GDE) AI/Cloud | AWS Community Builder
+Email: xbill@glitnir.com | Lawrenceville, NJ 08648
+LinkedIn: linkedin.com/in/xbill | GitHub: github.com/xbill9 | Hugging Face: huggingface.co/xbill9 | Blog: dev.to/xbill |
+medium.com/@xbill999
+
+Professional Summary
+Developer Relations leader and CTO who has been building software agents for 30+ years — from IBM's agent-oriented
+OPC Tracker Agent (1992) and a master's thesis on extensible agent technology to production agentic AI systems built on
+Gemini, Vertex AI, the Model Context Protocol (MCP), and the A2A protocol. Google Developer Expert (GDE) for AI and
+Cloud, AWS Community Builder (AI Engineer category), and Google TPU Builders participant, holding 9 Google Cloud
+certifications. Published the first community port of Gemma 4 to AWS Inferentia2 hardware (Hugging Face). Author of
+300+ technical articles and 170+ open-source repositories spanning multi-agent systems, LLM serving on Cloud TPU and
+GPUs, and agentic coding tools including Claude Code, OpenAI Codex, and Gemini CLI.
+
+Core Competencies & Skills
+
+
+
+
+
+
+
+
+
+
+Developer Relations & Advocacy: Developer Tools & SDKs, Community Engagement, Technical Content Creation
+(Blogs, Code Samples, Demos), Developer Programs, API Design & Review, Developer Feedback Loops, Speaking &
+Evangelism.
+Artificial Intelligence (AI) & Machine Learning (ML): Generative AI (GenAI) — Gemini, Gemma, Anthropic Claude,
+OpenAI GPT; AI Agents & Agentic Workflows, Prompt Engineering, Retrieval-Augmented Generation (RAG), Vertex AI,
+Hugging Face, Model Context Protocol (MCP), Agent-to-Agent (A2A) Protocol, Agent Development Kit (ADK), Large
+Language Model (LLM) Orchestration, LLM Serving & Inference (vLLM, Cloud Tensor Processing Units / TPU v6e, AWS
+Inferentia2, NVIDIA L4), Model Quantization (QAT), Model Evaluation & Benchmarking, MLOps, TensorFlow, PyTorch,
+Automated Code Analysis.
+Agentic Coding & AI Developer Tools: Anthropic Claude Code (MCP integrations, skills, sub-agents), OpenAI Codex,
+Gemini CLI, Antigravity CLI, Kiro — building, porting, and benchmarking MCP servers and agent toolchains across all
+major AI coding platforms.
+Cloud Architecture: Google Cloud Platform (GCP Expert), AWS (Community Builder), Azure; Multi-Cloud Strategy,
+Serverless (Cloud Run, Lambda), Kubernetes (GKE, EKS), Terraform, CI/CD, Infrastructure as Code (IaC).
+Technical Leadership: CTO-level Strategy, Board Advising, Investor Relations, Cross-Functional Team Leadership,
+Strategic Planning, Influence without Authority.
+Software Engineering: Distributed Systems, API Design (REST/gRPC), Event-Driven Architecture, Microservices, HighAvailability Systems, Client Libraries.
+Languages: Python, Rust, Go, TypeScript, Node.js, Java, PHP, C/C++, Bash, REXX.
+Security & Compliance: Zero-Trust Architecture, PCI-DSS Compliance (15+ years), PKI, OAuth, Network Security.
+
+Certifications & Developer Programs
+
+
+
+
+
+
+Google Developer Expert (GDE): AI and Cloud (current) — Representing the voice of developer communities,
+collaborating with Google product managers, and presenting live demos/keynotes globally.
+TPU Builders (Google): Deploy and benchmark Gemma-family models on Cloud TPU v6e as part of Google's TPU
+Builders program; publish TPU deployment guides and open-source MCP tooling for the community.
+AWS Community Builder (2026): Selected for the AI Engineer Category; five-time AWS Community Builder Spotlight
+honoree (5-Timers Club).
+dev.to Top Azure Author: Awarded the dev.to Azure badge, given to the top Azure author each week (dev.to/xbill).
+Google Cloud Certified (9x): Professional Machine Learning Engineer, Generative AI Leader, Cloud Architect, Data
+Engineer, DevOps Engineer, Cloud Developer, Cloud Security Engineer, Associate Cloud Engineer, Digital Leader.
+
+Professional Experience
+Developer Advocate | Google Developer Expert (AI/Cloud)
+Google Developer Program, New York, NY
+2024 - Present
+
+Represent developer communities to Google product teams through direct feedback channels with Google Cloud and
+Google DeepMind engineering — reviewing emerging API designs, testing pre-release features, and advocating for
+developer interests.
+ Deploy and benchmark Gemma-family models on Cloud TPU v6e and GPU infrastructure as a Google TPU Builders
+participant, publishing deployment guides and open-source MCP tooling for the community.
+ Delivered 10+ keynotes, conference talks, and workshops in the past year on agentic AI, multimodal agents, and LLM
+deployment (Build with AI, DevFest, university GDG chapters, hackathons).
+ Facilitated hands-on developer workshops as a technical assistant (TA), including a post-event workshop on the Google
+Cloud Next 2026 "Agentic Cloud" keynote demos and companion codelabs; sample currency-agent (A2A + ADK + MCP)
+featured in a Google codelab.
+Co-Founder & Chief Technology Officer
+Glitnir Ticketing, New York, NY
+2002 - Present
+ Developer Enablement & Tooling: Authored the open-source "ADK Agent Starter Kit" and developed high-impact AI
+utilities, including mcp-on-cloudrun (high-performance MCP deployments), to simplify the creation of agentic
+workflows and client-side implementations for thousands of developers.
+ AI Transformation: Architected an AI-first engineering culture by integrating agentic coding tools — Claude Code,
+OpenAI Codex, Gemini CLI — and MCP across the software development lifecycle, from code review and testing to
+legacy migration.
+ Cloud Infrastructure: Designed and managed a multi-cloud (GCP & AWS) enterprise SaaS platform processing $20M+
+in annual transactions with 99.9% availability.
+ Regulatory Compliance: Engineered and maintained a zero-trust architecture, securing 15+ consecutive years of PCIDSS compliance.
+ Legacy Modernization: Developed refactor, an AI-assisted toolset for automating the migration of legacy monoliths to
+modern, cloud-native microservices.
+Chief Technology Officer
+Authentidate Sports, New York, NY
+2000 - 2002
+ Engineered a first-to-market streaming media platform featuring advanced encryption and high-availability failover.
+ Directed technical strategy for investor relations and contributed to foundational patent filings for secure media
+delivery.
+Principal Consultant - Architect
+Cap Gemini Ernst & Young, New York, NY
+1999 - 2000
+ Architected mission-critical trading systems and e-commerce platforms for Fortune 500 clients, including Reuters,
+Deutsche Bank, and Chase.
+ Appointed to the elite SBA1 Architecture Council, advising on global architectural standards.
+Chief Designer, OPC Tracker Agent
+IBM, Global
+1992 - 1999
+ Architected Agent-Oriented distributed applications for enterprise-scale systems management across heterogeneous
+environments.
+
+
+Open Source & AI Projects
+170+ public repositories at github.com/xbill9. Selected AI-focused work:
+ AI Education: way-back-home — an immersive AI workshop platform teaching Google Cloud AI agent development
+(Gemini, Veo, ADK, MCP, A2A) through a narrative rescue mission, used in Build with AI keynotes and workshops.
+ Google Codelab Sample & Starter Kits: currency-agent family (Python and Rust) — A2A + ADK + MCP sample agent
+featured in a Google codelab, with AG-UI frontend variants; adk-hello-world ADK starter kits in Python, Go, and Java;
+a2a-inspector — web-based tool for debugging and validating A2A protocol servers.
+ Multi-Agent Systems (A2A + ADK): multi-agent — AI Course Creator, a distributed multi-agent system of specialized
+microservice agents (research, judge, build) orchestrated over the A2A protocol; a2a-benchmark and a2a-multicloud
+
+
+
+
+
+
+
+— cross-language (Python, Go, TypeScript, Rust) and cross-cloud (GCP, AWS, Azure) A2A performance benchmarking
+suites.
+Published Models — First Community Port of Gemma 4 to AWS Inferentia2: Compiled and published the first
+community Gemma 4 models for AWS Inferentia2 (Neuron) on Hugging Face — gemma-4-12B-it-inferentia2,
+gemma-4-E4B-it-inferentia2, and gemma-4-E2B-it-inferentia2 (huggingface.co/xbill9) — with companion Docker
+images at ~1,000 combined pulls (hub.docker.com/u/xbill9) and a published field report.
+TPU & LLM Serving: TPU Sprint MCP Toolkit (aisprintapr2026) — nine specialized MCP servers that give LLMs "eyes
+and hands" for deploying and optimizing workloads on Cloud TPU v6e and serverless GPUs (Cloud Run L4), companion
+to published Gemma-on-TPU deployment guides; gemma4-tips — self-hosted Gemma 4-powered DevOps/SRE agents
+served via vLLM on Cloud Run GPUs, with AWS and Azure variants.
+Agentic Coding Tool Integrations: MCP servers and agents built for and ported across Claude Code, OpenAI Codex,
+Gemini CLI, Antigravity CLI, and Kiro — Looker BI (looker-mcp-claude), Gemini image and video generation (nb2lite,
+omni-flash-video-agent), Google Workspace (workspace-mcp), and Google Developer Knowledge (knowledge-api);
+plus production-grade Rust MCP servers (stdio and streaming-HTTP on Cloud Run with Identity-Aware Proxy) and
+"Cymbal Superstore" MCP implementations across ~19 programming languages.
+
+Speaking & Community Leadership
+
+
+
+
+
+
+
+
+Speaker | LLM Day NYC | June 2026: Live demo and talk on Gemma 4.
+Keynote Speaker | Hack Michigan - Way Back Home | May 2026: Keynote on multimodal, real-time AI agent
+development.
+Keynote Speaker | Build with AI - Way Back Home | March 2026: Keynote on AI agent development and the
+evolution of the software agent paradigm.
+Speaker | UofT Build with AI, GDGoC UofT Scarborough | Mar 2026: Presented Multimodal ADK with Live Models.
+Speaker | Agent Glow Hackathon | Mar 2026: Presented Multimodal Gemini Live and Vertex AI integration.
+Speaker | Detroit Black History Month Innovation Summit | Feb 2026: Presented "LLM Deployment" on enterprise
+MLOps and Gemini/Vertex AI integration.
+Additional Workshops & Mentoring: Build with AI Workshops (GDG Queens 2026, DevFest Brooklyn/Queens 2025),
+Future of Data and AI: Agentic AI Conference (2026), Self Improving Agents Hack NYC (2026); Technical Mentor for
+Agentverse NYC, Accelerate AI with Cloud Run, and Build with AI NYC (2025).
+
+Education
+Master of Science (M.Sc.), Computer Science
+University of Western Ontario
+ Thesis: Distributed Application Management and Extensible Agent Technology
+ Recipient of the NSERC Canadian Post Graduate Scholarship.
+Honours Bachelor of Science (B.Sc.), Computer Science
+University of Western Ontario
+
+Publications
+300+ technical articles published across dev.to and Medium. Highlights:
+ "Cross Language A2A Agent Development and Testing" - Google Cloud Blog
+ "Building AI Agents with the GO Agent Development Kit (ADK)" - Google Medium
+ "TPU Deployments with Gemma 31B, v6e-8, and Antigravity CLI" - Medium
+ "Porting Gemma-4 (2B/4B/12B) to AWS Inferentia2" - dev.to
+ "MCP Configuration for Looker with Claude Code" - dev.to
+ "Gemma-SRE: Self-Hosted vLLM Infrastructure Agent" - Medium
+ "Extending a MCP/A2A Currency Agent with AG-UI and Antigravity CLI" - Medium
+ "Debugging Deployments with Gemma 12B, TPU v6e-1, MCP, and Antigravity CLI" - Medium
+ "Cross Cloud A2A Agent Benchmarking with Antigravity CLI" - Medium
+
+
