@@ -1,0 +1,41 @@
+#!/bin/bash
+# PII guard: block commits that would publish personal contact info.
+# Installed via: git config core.hooksPath hooks
+#
+# Checks every staged file (including inside .docx and .pdf binaries) for
+# phone numbers and the street address, and refuses private-path commits.
+set -euo pipefail
+
+PHONE_RE='[0-9]{3}[-. ][0-9]{3}[-. ][0-9]{4}'
+ADDR_RE='Nassau[[:space:]]+Dr|37[[:space:]]+Nassau'
+
+fail() { echo "BLOCKED: $1" >&2; echo "(commit aborted by hooks/pre-commit PII guard)" >&2; exit 1; }
+
+mapfile -t staged < <(git diff --cached --name-only --diff-filter=ACM)
+[ ${#staged[@]} -eq 0 ] && exit 0
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+for f in "${staged[@]}"; do
+  case "$f" in
+    PRIVATE_CONTACT|private/*) fail "'$f' is a private file and must never be committed" ;;
+  esac
+
+  git show ":$f" > "$tmp/blob" 2>/dev/null || continue
+
+  case "$f" in
+    *.pdf)  text="$(pdftotext "$tmp/blob" - 2>/dev/null || true)" ;;
+    *.docx) text="$(unzip -p "$tmp/blob" word/document.xml 2>/dev/null | sed 's/<[^>]*>/ /g' || true)" ;;
+    *)      text="$(cat "$tmp/blob")" ;;
+  esac
+
+  if grep -qE "$PHONE_RE" <<<"$text"; then
+    fail "staged file '$f' contains a phone number"
+  fi
+  if grep -qE "$ADDR_RE" <<<"$text"; then
+    fail "staged file '$f' contains the street address"
+  fi
+done
+
+exit 0

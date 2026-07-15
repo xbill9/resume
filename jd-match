@@ -1,0 +1,112 @@
+#!/usr/bin/env python3
+"""jd-match — compare a job description's keywords against the resume.
+
+Usage:
+    ./jd-match posting.txt [resume.md ...]
+
+With no resume arguments, checks against both resume_consolidated.md and
+resume_2page.md. Reports which high-signal terms from the posting appear
+in each resume and which are missing, ranked by how often the posting
+uses them. Keep postings in private/jd/ so they stay out of the repo.
+"""
+import re
+import sys
+from collections import Counter
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent
+
+STOP = set("""
+a about above after all also an and any are as at be been before being best
+between both build building business but by can candidate candidates com
+company culture customers day description do drive e each eg employee
+employer employment equal etc every excellent experience family for from
+get great has have health help highly hire hiring how ideal if in including
+insurance is it its job join like ll looking love make may medical more
+most must new not of offer on one opportunity or other our out over own
+paid per plan plus preferred qualifications range re related required
+requirements responsibilities role s salary should skills so some strong
+success such team than that the their them then these they this those
+through time to under understanding us use using vacation we well what
+when where which while who will with within work working world would year
+years you your yourself benefits ability able across bonus click apply
+applicants applicant status veteran gender race religion orientation
+disability identity national origin law federal state local locations
+location remote hybrid onsite equity stock diverse diversity inclusive
+inclusion
+""".split())
+
+# Multi-word tech phrases worth matching as units when the posting uses them.
+PHRASES = [
+    "machine learning", "artificial intelligence", "generative ai",
+    "large language model", "large language models", "prompt engineering",
+    "retrieval augmented generation", "developer relations",
+    "developer advocacy", "developer experience", "open source",
+    "model context protocol", "agent development kit", "multi agent",
+    "technical writing", "public speaking", "cloud native", "ci cd",
+    "computer science", "vertex ai", "google cloud", "hugging face",
+    "fine tuning", "data science", "deep learning", "neural network",
+    "cross functional",
+]
+
+
+def norm(text: str) -> str:
+    text = text.lower()
+    text = re.sub(r"[^a-z0-9+#./-]+", " ", text)
+    return re.sub(r"\s+", " ", text)
+
+
+def load(path: Path) -> str:
+    return norm(path.read_text(encoding="utf-8", errors="replace"))
+
+
+def jd_terms(jd: str) -> Counter:
+    counts = Counter()
+    for phrase in PHRASES:
+        n = jd.count(phrase)
+        if n:
+            counts[phrase] = n
+            jd = jd.replace(phrase, " ")
+    for word in jd.split():
+        w = word.strip(".-/")
+        if len(w) < 2 or w in STOP or w.isdigit():
+            continue
+        counts[w] += 1
+    # Keep high-signal terms: repeated, or looks technical (acronym-ish,
+    # contains digits/symbols, or is a known phrase).
+    keep = Counter()
+    for term, n in counts.items():
+        techy = any(c.isdigit() for c in term) or any(c in "+#./" for c in term)
+        if n >= 2 or techy or " " in term:
+            keep[term] = n
+    return keep
+
+
+def main():
+    if len(sys.argv) < 2:
+        sys.exit(__doc__)
+    jd_path = Path(sys.argv[1])
+    resumes = [Path(p) for p in sys.argv[2:]] or [
+        REPO / "resume_consolidated.md", REPO / "resume_2page.md"]
+
+    terms = jd_terms(load(jd_path))
+    if not terms:
+        sys.exit("No significant terms found in the posting.")
+
+    for rp in resumes:
+        body = load(rp)
+        covered = {t: n for t, n in terms.items() if t in body}
+        missing = {t: n for t, n in terms.items() if t not in body}
+        pct = 100 * len(covered) // len(terms)
+        print(f"\n=== {rp.name}: {pct}% coverage "
+              f"({len(covered)}/{len(terms)} terms) ===")
+        if missing:
+            print("MISSING (posting mentions x times — add if honest):")
+            for t, n in sorted(missing.items(), key=lambda kv: -kv[1]):
+                print(f"  {n:>3}x  {t}")
+        top = sorted(covered.items(), key=lambda kv: -kv[1])[:10]
+        print("covered (top):", ", ".join(t for t, _ in top))
+
+
+if __name__ == "__main__":
+    main()
