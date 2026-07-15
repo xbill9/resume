@@ -39,4 +39,9 @@ This repo is **public**. Committed files carry only email + city/state/ZIP — n
 
 ## Tailoring workflow
 
-For a specific job posting: copy `resume_2page.md` to a new file, mirror the posting's job title in the headline line, adjust keyword emphasis, build with `./make-resume <file>.md` — never edit the master for a one-off application.
+For a specific job posting: save the posting to `private/jd/<company>.txt`, run `./jd-match private/jd/<company>.txt` to see covered vs. missing keywords, then copy `resume_2page.md` to a new file under `private/`, mirror the posting's job title in the headline line, add missing keywords **only where honest**, and build with `./make-resume private/<file>.md` — never edit the master for a one-off application.
+
+## Repo tooling
+
+- `hooks/pre-commit` (enabled via `git config core.hooksPath hooks`) blocks commits containing phone numbers or the street address, including inside .docx/.pdf binaries. If it fires, fix the content — never bypass with `--no-verify`.
+- `jd-match` is stdlib-only Python; keep it dependency-free.

@@ -12,7 +12,9 @@ Source-controlled resume for **William McLean** ([xbill9](https://github.com/xbi
 | `*.pdf` | Generated PDF versions — for email and human eyes. |
 | `*.txt` | Extracted PDF text layer — exactly what an ATS parser sees. |
 | `md2docx.py` | Markdown → DOCX converter (python-docx). ATS-safe output: real heading styles, no tables, clickable hyperlinks, compact spacing. |
-| `make-resume` | One-command build: docx + pdf + text layer + page count + spell check. |
+| `make-resume` | One-command build: docx + pdf + text layer + page count + spell check. Also builds full-contact copies into `private/`. |
+| `jd-match` | Compare a job posting's keywords against the resumes: `./jd-match private/jd/posting.txt` reports covered vs. missing terms. |
+| `hooks/pre-commit` | PII guard — blocks any commit containing a phone number or street address (scans inside .docx/.pdf too). Enable with `git config core.hooksPath hooks`. |
 
 ## Build
 
