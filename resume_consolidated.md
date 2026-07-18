@@ -31,7 +31,8 @@ Developer Relations leader and CTO who has been **building software agents for 3
 * **TPU Builders (Google):** Deploy and benchmark Gemma-family models on Cloud TPU v6e as part of Google's TPU Builders program; publish TPU deployment guides and open-source MCP tooling for the community.  
 * **AWS Community Builder (2026):** Selected for the AI Engineer Category; five-time AWS Community Builder Spotlight honoree ([5-Timers Club](https://builder.aws.com/content/3GEF40vhcrWyM95JyVov8VHbEa7/aws-cb-spotlight-5-timers-club-william-mclean)).  
 * **dev.to Top Azure Author:** Awarded the dev.to Azure badge, given to the top Azure author each week ([dev.to/xbill](https://dev.to/xbill)).  
-* **Google Cloud Certified (9x):** Professional Machine Learning Engineer, Generative AI Leader, Cloud Architect, Data Engineer, DevOps Engineer, Cloud Developer, Cloud Security Engineer, Associate Cloud Engineer, Digital Leader.
+* **Google Cloud Certified (9x):** Professional Machine Learning Engineer, Generative AI Leader, Cloud Architect, Data Engineer, DevOps Engineer, Cloud Developer, Cloud Security Engineer, Associate Cloud Engineer, Digital Leader.  
+* **Google Cloud Partner Certifications (2026):** Gemini Enterprise Deployment (secure environment configuration, Google Workspace data integration, Model Armor, search governance) and Gemini Enterprise Agent Development (AI agent development, API integration, prompt tuning, Antigravity IDE).
 
 ---
 

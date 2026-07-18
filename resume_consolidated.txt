@@ -50,6 +50,7 @@ Certifications & Developer Programs
 
 
 
+
 
 Google Developer Expert (GDE): AI and Cloud (current) — Representing the voice of developer communities,
 collaborating with Google product managers, and presenting live demos/keynotes globally.
@@ -60,13 +61,16 @@ honoree (5-Timers Club).
 dev.to Top Azure Author: Awarded the dev.to Azure badge, given to the top Azure author each week (dev.to/xbill).
 Google Cloud Certified (9x): Professional Machine Learning Engineer, Generative AI Leader, Cloud Architect, Data
 Engineer, DevOps Engineer, Cloud Developer, Cloud Security Engineer, Associate Cloud Engineer, Digital Leader.
+Google Cloud Partner Certifications (2026): Gemini Enterprise Deployment (secure environment configuration, Google
+Workspace data integration, Model Armor, search governance) and Gemini Enterprise Agent Development (AI agent
+development, API integration, prompt tuning, Antigravity IDE).
 
 Professional Experience
 Developer Advocate | Google Developer Expert (AI/Cloud)
 Google Developer Program, New York, NY
-2024 - Present
 
-Represent developer communities to Google product teams through direct feedback channels with Google Cloud and
+2024 - Present
+ Represent developer communities to Google product teams through direct feedback channels with Google Cloud and
 Google DeepMind engineering — reviewing emerging API designs, testing pre-release features, and advocating for
 developer interests.
  Deploy and benchmark Gemma-family models on Cloud TPU v6e and GPU infrastructure as a Google TPU Builders
@@ -107,7 +111,6 @@ IBM, Global
 1992 - 1999
  Architected Agent-Oriented distributed applications for enterprise-scale systems management across heterogeneous
 environments.
-
 
 Open Source & AI Projects
 170+ public repositories at github.com/xbill9. Selected AI-focused work:
