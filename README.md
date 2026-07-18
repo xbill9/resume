@@ -32,6 +32,17 @@ sudo apt install python3-docx libreoffice-writer-nogui poppler-utils \
 
 `fonts-crosextra-carlito` matters: the DOCX uses Calibri, and Carlito is its metric-compatible substitute, so LibreOffice's PDF export keeps identical line breaks and page counts.
 
+## Setting up on a new machine
+
+The full-contact builds are never in git — they regenerate locally from `PRIVATE_CONTACT`:
+
+1. `git clone https://github.com/xbill9/resume.git` and install the dependencies above.
+2. Recreate `PRIVATE_CONTACT` at the repo root: a single-line file holding the full contact line (phone + street address) that replaces the public contact line. Transfer it over a channel that isn't git — `scp`, a USB stick, or a password manager — e.g. `scp oldhost:resume/PRIVATE_CONTACT resume/`.
+3. Enable the PII guard: `git config core.hooksPath hooks`.
+4. Run `./make-resume` and `./make-resume resume_2page.md` — the full-contact `.docx`/`.pdf` land in the gitignored `private/` directory. Those are the versions to submit with applications.
+
+Never `git add -f` anything under `private/` or `PRIVATE_CONTACT`, and don't move the built files through anything that syncs publicly.
+
 ## Conventions
 
 - Edit only the `.md` files; everything else is generated. Rebuild after every edit and check the page count (`resume_2page` must stay at 2 pages).
