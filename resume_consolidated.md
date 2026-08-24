@@ -8,7 +8,7 @@ LinkedIn: [linkedin.com/in/xbill](https://www.linkedin.com/in/xbill) | GitHub: [
 
 ### Professional Summary
 
-Developer Relations leader and CTO who has been **building software agents for 30+ years** — from IBM's agent-oriented OPC Tracker Agent (1992) and a master's thesis on extensible agent technology to production agentic AI systems built on Gemini, Vertex AI, the Model Context Protocol (MCP), and the A2A protocol. **Google Developer Expert (GDE) for AI and Cloud, AWS Community Builder (AI Engineer category), and Google TPU Builders participant**, holding 9 Google Cloud certifications. Published the **first community port of Gemma 4 to AWS Inferentia2 hardware** (Hugging Face). Author of **300+ technical articles** and 170+ open-source repositories spanning multi-agent systems, LLM serving on Cloud TPU and GPUs, and agentic coding tools including Claude Code, OpenAI Codex, and Gemini CLI.
+Developer Relations leader and CTO who has been **building software agents for 30+ years** — from IBM's agent-oriented OPC Tracker Agent (1992) and a master's thesis on extensible agent technology to production agentic AI systems built on Gemini, Vertex AI, the Model Context Protocol (MCP), and the A2A protocol. **Google Cloud Ambassador, Google Developer Expert (GDE) for AI and Cloud, AWS Community Builder (AI Engineer category), and Google TPU Builders participant**, holding 9 Google Cloud certifications. Published the **first community port of Gemma 4 to AWS Inferentia2 hardware** (Hugging Face). Author of **300+ technical articles** and 170+ open-source repositories spanning multi-agent systems, LLM serving on Cloud TPU and GPUs, and agentic coding tools including Claude Code, OpenAI Codex, and Gemini CLI.
 
 ---
 
@@ -27,6 +27,7 @@ Developer Relations leader and CTO who has been **building software agents for 3
 
 ### Certifications & Developer Programs
 
+* **Google Cloud Ambassador (2026):** Selected for the [Google Cloud Ambassadors](https://partners.cloud.google.com/google-cloud-ambassadors#northam) program (North America) — recognized by Google Cloud for partner-ecosystem technical leadership and community advocacy.  
 * **Google Developer Expert (GDE):** AI and Cloud (current) — Representing the voice of developer communities, collaborating with Google product managers, and presenting live demos/keynotes globally.  
 * **TPU Builders (Google):** Deploy and benchmark Gemma-family models on Cloud TPU v6e as part of Google's TPU Builders program; publish TPU deployment guides and open-source MCP tooling for the community.  
 * **AWS Community Builder (2026):** Selected for the AI Engineer Category; five-time AWS Community Builder Spotlight honoree ([5-Timers Club](https://builder.aws.com/content/3GEF40vhcrWyM95JyVov8VHbEa7/aws-cb-spotlight-5-timers-club-william-mclean)).  
