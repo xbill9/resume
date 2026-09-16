@@ -1,0 +1,192 @@
+#!/usr/bin/env python3
+"""jd-search — find Google Careers postings and save them for jd-match.
+
+Usage:
+    ./jd-search QUERY [QUERY ...] [-l LOCATION] [-m TERM ...] [-n PAGES] [--save]
+
+Searches the Google Careers site, merges the results of every QUERY, keeps
+only postings in LOCATION, and ranks them by how often the MATCH terms
+appear in the full posting text. Filtering, counting and ranking all happen
+here rather than by eye — the output is meant to be quoted, not re-tallied.
+
+    ./jd-search "customer engineer AI" -l "New York, NY, USA" -m agent agentic
+    ./jd-search "developer relations" -l "New York, NY, USA" --save
+
+With --save, each surviving posting is written to private/jd/<slug>.txt,
+which is gitignored and is exactly what ./jd-match expects:
+
+    ./jd-match private/jd/customer-engineer-cloud-ai-ai-natives.txt
+
+Postings turn over quickly; re-run rather than trusting an old listing.
+Stdlib only, no third-party packages.
+"""
+import argparse
+import html
+import json
+import re
+import sys
+import urllib.parse
+import urllib.request
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent
+JD_DIR = REPO / "private" / "jd"
+BASE = "https://www.google.com/about/careers/applications/jobs/results"
+UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+      "(KHTML, like Gecko) Chrome/140.0 Safari/537.36")
+
+
+def get(url: str) -> str:
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=40) as r:
+        return r.read().decode("utf-8", errors="replace")
+
+
+def strip_tags(x: str) -> str:
+    return html.unescape(re.sub(r"<[^>]+>", " ", x)).strip().strip(";").strip()
+
+
+def parse_cards(page: str) -> dict:
+    """Pull the result cards out of a search-results page.
+
+    Google ships obfuscated CSS class names that change between builds, so
+    anchor on the stable bits: the ssk='17:<id>' marker on each list item
+    and the jobs/results/<id>-<slug> hrefs.
+    """
+    slugs = dict(re.findall(r'href="jobs/results/(\d+)-([a-z0-9\-]+)', page))
+    found = {}
+    for block in page.split("ssk='17:")[1:]:
+        m = re.match(r"(\d+)", block)
+        if not m:
+            continue
+        jid = m.group(1)
+        title = re.search(r"<h3[^>]*>(.*?)</h3>", block, re.S)
+        locs = re.search(r"place</i>(.*?)</span></div>", block, re.S)
+        level = re.search(r'aria-label="([^,"]+), Learn more about experience',
+                          block)
+        found[jid] = {
+            "id": jid,
+            "title": strip_tags(title.group(1)) if title else "",
+            "locations": [strip_tags(s) for s in re.findall(
+                r'<span class="r0wTof[^"]*">(.*?)</span>',
+                locs.group(1) if locs else "", re.S)],
+            "level": level.group(1) if level else "",
+            "url": f"{BASE}/{jid}-{slugs.get(jid, '')}",
+            "slug": slugs.get(jid, jid),
+        }
+    return found
+
+
+def search(query: str, location: str, pages: int) -> dict:
+    out = {}
+    for page in range(1, pages + 1):
+        params = {"q": query, "page": page}
+        if location:
+            params["location"] = location
+        try:
+            cards = parse_cards(get(BASE + "?" + urllib.parse.urlencode(params)))
+        except Exception as exc:                       # network/markup drift
+            print(f"  ! {query!r} page {page}: {exc}", file=sys.stderr)
+            break
+        fresh = {k: v for k, v in cards.items() if k not in out}
+        if not fresh:
+            break
+        out.update(fresh)
+    return out
+
+
+def walk(obj):
+    if isinstance(obj, str):
+        yield obj
+    elif isinstance(obj, list):
+        for item in obj:
+            yield from walk(item)
+
+
+def description(url: str) -> str:
+    """Full posting text for one job.
+
+    A job page embeds several postings (the target plus related roles).
+    AF_dataServiceRequests names ds:0 as the one the URL asked for, so read
+    that payload and ignore the rest — matching on "longest string wins"
+    picks up a neighbouring posting instead.
+    """
+    try:
+        page = get(url)
+    except Exception as exc:
+        print(f"  ! {url}: {exc}", file=sys.stderr)
+        return ""
+    blob = re.search(r"AF_initDataCallback\(\{key:\s*'ds:0'.*?"
+                     r"data:(\[.*?\])\s*,\s*sideChannel", page, re.S)
+    if not blob:
+        return ""
+    try:
+        data = json.loads(blob.group(1))
+    except ValueError:
+        return ""
+    parts = [strip_tags(s).replace("  ", " ")
+             for s in walk(data) if len(s) > 200 and ("<li" in s or "<p" in s)]
+    return "\n\n".join(parts)
+
+
+def main():
+    ap = argparse.ArgumentParser(add_help=False)
+    ap.add_argument("queries", nargs="*")
+    ap.add_argument("-l", "--location", default="")
+    ap.add_argument("-m", "--match", nargs="*", default=[])
+    ap.add_argument("-n", "--pages", type=int, default=4)
+    ap.add_argument("--save", action="store_true")
+    ap.add_argument("-h", "--help", action="store_true")
+    args = ap.parse_args()
+    if args.help or not args.queries:
+        sys.exit(__doc__)
+
+    jobs = {}
+    for q in args.queries:
+        jobs.update(search(q, args.location, args.pages))
+    print(f"postings found:      {len(jobs)}")
+
+    if args.location:
+        city = args.location.split(",")[0].strip()
+        jobs = {k: v for k, v in jobs.items()
+                if any(city.lower() in loc.lower() for loc in v["locations"])}
+        print(f"actually in {city}:  {len(jobs)}")
+    if not jobs:
+        sys.exit("No postings matched.")
+
+    terms = [t.lower() for t in args.match]
+    rows = []
+    for job in jobs.values():
+        text = description(job["url"]) if (terms or args.save) else ""
+        low = text.lower()
+        hits = {t: low.count(t) for t in terms if low.count(t)}
+        rows.append({**job, "text": text, "hits": hits,
+                     "score": sum(hits.values())})
+
+    if terms:
+        scored = [r for r in rows if r["score"]]
+        print(f"mentioning {'/'.join(terms)}: {len(scored)}")
+        rows = scored or rows
+    rows.sort(key=lambda r: (-r["score"], r["title"]))
+
+    for r in rows:
+        print(f"\n* {r['title']}" + (f"  [{r['level']}]" if r["level"] else ""))
+        print(f"    {'; '.join(r['locations'])}")
+        if r["hits"]:
+            print("    hits: " + ", ".join(
+                f"{t} x{n}" for t, n in sorted(r["hits"].items(),
+                                               key=lambda kv: -kv[1])))
+        print(f"    {r['url']}")
+        if args.save and r["text"]:
+            JD_DIR.mkdir(parents=True, exist_ok=True)
+            path = JD_DIR / f"{r['slug']}.txt"
+            path.write_text(f"{r['title']}\n{'; '.join(r['locations'])}\n"
+                            f"{r['url']}\n\n{r['text']}\n", encoding="utf-8")
+            print(f"    saved: {path.relative_to(REPO)}")
+
+    if args.save:
+        print("\nNext: ./jd-match private/jd/<slug>.txt")
+
+
+if __name__ == "__main__":
+    main()

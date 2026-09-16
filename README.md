@@ -14,6 +14,7 @@ Source-controlled resume for **William McLean** ([xbill9](https://github.com/xbi
 | `md2docx.py` | Markdown → DOCX converter (python-docx). ATS-safe output: real heading styles, no tables, clickable hyperlinks, compact spacing. |
 | `make-resume` | One-command build: docx + pdf + text layer + page count + spell check. Also builds full-contact copies into `private/`. |
 | `jd-match` | Compare a job posting's keywords against the resumes: `./jd-match private/jd/posting.txt` reports covered vs. missing terms. |
+| `jd-search` | Search Google Careers for postings, filter by location, rank by keyword hits, and `--save` them into `private/jd/` for `jd-match`. |
 | `hooks/pre-commit` | PII guard — blocks any commit containing a phone number or street address (scans inside .docx/.pdf too). Enable with `git config core.hooksPath hooks`. |
 
 ## Build
@@ -45,6 +46,7 @@ Never `git add -f` anything under `private/` or `PRIVATE_CONTACT`, and don't mov
 
 ## Conventions
 
+- Tailoring for a posting: `./jd-search "customer engineer AI" -l "New York, NY, USA" -m agent agentic --save` pulls matching Google Careers postings into the gitignored `private/jd/`, then `./jd-match private/jd/<slug>.txt` shows covered vs. missing keywords.
 - Edit only the `.md` files; everything else is generated. Rebuild after every edit and check the page count (`resume_2page` must stay at 2 pages).
 - ATS formatting rules and content rules live in [CLAUDE.md](CLAUDE.md) / [GEMINI.md](GEMINI.md).
 - **Privacy:** committed files are scrubbed (email + city/state only). Full-contact versions for actual applications are built automatically into the gitignored `private/` directory from the gitignored `PRIVATE_CONTACT` file.

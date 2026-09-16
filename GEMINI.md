@@ -39,9 +39,15 @@ This repo is **public**. Committed files carry only email + city/state/ZIP — n
 
 ## Tailoring workflow
 
-For a specific job posting: save the posting to `private/jd/<company>.txt`, run `./jd-match private/jd/<company>.txt` to see covered vs. missing keywords, then copy `resume_2page.md` to a new file under `private/`, mirror the posting's job title in the headline line, add missing keywords **only where honest**, and build with `./make-resume private/<file>.md` — never edit the master for a one-off application.
+For a specific job posting: save the posting to `private/jd/<company>.txt` (`./jd-search ... --save` fetches Google Careers postings straight into that directory), run `./jd-match private/jd/<company>.txt` to see covered vs. missing keywords, then copy `resume_2page.md` to a new file under `private/`, mirror the posting's job title in the headline line, add missing keywords **only where honest**, and build with `./make-resume private/<file>.md` — never edit the master for a one-off application.
 
 ## Repo tooling
 
 - `hooks/pre-commit` (enabled via `git config core.hooksPath hooks`) blocks commits containing phone numbers or the street address, including inside .docx/.pdf binaries. If it fires, fix the content — never bypass with `--no-verify`.
 - `jd-match` is stdlib-only Python; keep it dependency-free.
+- `jd-search` searches Google Careers, filters by location and ranks by keyword
+  hits, and with `--save` writes each posting to `private/jd/` for `jd-match`.
+  Also stdlib-only. It scrapes rendered HTML, so the card parser is pinned to the
+  stable `ssk='17:<id>'` markers and `ds:0` payload rather than Google's obfuscated
+  CSS class names, which change between builds — if it returns 0 postings, that
+  markup moved. Postings turn over fast; re-run instead of trusting saved output.
