@@ -29,11 +29,26 @@ hunspell -d en_US -l "$SRC" | sort -u | tr '\n' ' '; echo
 # Full-contact build for actual applications (gitignored). PRIVATE_CONTACT holds
 # the complete contact line; the public sources carry the scrubbed one.
 if [ -f "$REPO/PRIVATE_CONTACT" ]; then
-  echo "==> private build (full contact) -> private/${BASE}.*"
-  mkdir -p "$REPO/private"
-  awk -v repl="$(head -1 "$REPO/PRIVATE_CONTACT")" \
-    '/^Email: \[/ && !done { print repl "  "; done=1; next } { print }' \
-    "$SRC" > "$REPO/private/${BASE}.md"
-  python3 "$REPO/md2docx.py" "$REPO/private/${BASE}.md" >/dev/null
-  soffice --headless --convert-to pdf --outdir "$REPO/private" "$REPO/private/${BASE}.docx" >/dev/null 2>&1
+  CONTACT="$(head -1 "$REPO/PRIVATE_CONTACT")"
+  if [ -z "$CONTACT" ]; then
+    echo "==> private build skipped: PRIVATE_CONTACT is empty"
+  else
+    echo "==> private build (full contact) -> private/${BASE}.*"
+    mkdir -p "$REPO/private"
+    PRIV_MD="$REPO/private/${BASE}.md"
+    # Substitute through a scratch file. Tailored variants are themselves built
+    # from private/<name>.md, and reading and writing one path in the same
+    # redirect truncates it to zero bytes before awk ever reads it.
+    WORK="$REPO/private/.${BASE}.full.md"
+    awk -v repl="$CONTACT" \
+      '/^Email: \[/ && !done { print repl "  "; done=1; next } { print }' \
+      "$SRC" > "$WORK"
+    # Public sources get a full-contact copy alongside them; a source that is
+    # already the private one keeps its scrubbed contact line.
+    [ "$SRC" = "$PRIV_MD" ] || cp "$WORK" "$PRIV_MD"
+    python3 "$REPO/md2docx.py" "$WORK" >/dev/null
+    mv "$REPO/private/.${BASE}.full.docx" "$REPO/private/${BASE}.docx"
+    soffice --headless --convert-to pdf --outdir "$REPO/private" "$REPO/private/${BASE}.docx" >/dev/null 2>&1
+    rm -f "$WORK"
+  fi
 fi
