@@ -71,7 +71,19 @@ def get_json(url: str):
 
 
 def strip_tags(x: str) -> str:
-    return html.unescape(re.sub(r"<[^>]+>", " ", x)).strip().strip(";").strip()
+    """Unescape first, then strip tags -- and repeat.
+
+    Greenhouse ships its posting body HTML-escaped, so a tag arrives as
+    &lt;div&gt;. Stripping before unescaping leaves the tag names behind as
+    literal words, which then read as posting vocabulary: div, h2, nbsp,
+    class, href. Looping also handles doubly-escaped markup.
+    """
+    for _ in range(3):
+        before = x
+        x = re.sub(r"<[^>]+>", " ", html.unescape(x))
+        if x == before:
+            break
+    return re.sub(r"\s+", " ", x).strip().strip(";").strip()
 
 
 def slugify(*parts) -> str:
