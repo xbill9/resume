@@ -15,6 +15,7 @@ Source-controlled resume for **William McLean** ([xbill9](https://github.com/xbi
 | `make-resume` | One-command build: docx + pdf + text layer + page count + spell check. Also builds full-contact copies into `private/`. |
 | `jd-match` | Compare a job posting's keywords against the resumes: `./jd-match private/jd/posting.txt` reports covered vs. missing terms. |
 | `jd-search` | Search Google Careers for postings, filter by location, rank by keyword hits, and `--save` them into `private/jd/` for `jd-match`. |
+| `boards.txt` | Company job boards for `./jd-search --boards` (Greenhouse / Ashby / Lever), one `PROVIDER TOKEN Name` per line. |
 | `hooks/pre-commit` | PII guard — blocks any commit containing a phone number or street address (scans inside .docx/.pdf too). Enable with `git config core.hooksPath hooks`. |
 
 ## Build

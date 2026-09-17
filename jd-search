@@ -1,21 +1,32 @@
 #!/usr/bin/env python3
-"""jd-search — find Google Careers postings and save them for jd-match.
+"""jd-search — find job postings and save them for jd-match.
 
 Usage:
     ./jd-search QUERY [QUERY ...] [-l LOCATION] [-m TERM ...] [-n PAGES] [--save]
+    ./jd-search --boards [-q WORD ...] [-l LOCATION] [-m TERM ...] [--save]
 
-Searches the Google Careers site, merges the results of every QUERY, keeps
-only postings in LOCATION, and ranks them by how often the MATCH terms
-appear in the full posting text. Filtering, counting and ranking all happen
-here rather than by eye — the output is meant to be quoted, not re-tallied.
+Two sources. Without --boards it searches Google Careers. With --boards it
+reads boards.txt and pulls every posting from those companies' applicant
+tracking systems (Greenhouse, Ashby and Lever all publish open JSON job
+boards, no key required).
+
+Either way it keeps only postings whose location contains LOCATION, ranks
+them by how often the MATCH terms appear in the full posting text, and
+prints exact counts. Filtering, counting and ranking happen here rather
+than by eye — the output is meant to be quoted, not re-tallied.
 
     ./jd-search "customer engineer AI" -l "New York, NY, USA" -m agent agentic
-    ./jd-search "developer relations" -l "New York, NY, USA" --save
+    ./jd-search --boards -l "New York" -m kubernetes inference vllm tpu
+    ./jd-search --boards -q "solutions architect" "developer advocate" --save
+
+-q filters board postings by words in the job title; -m ranks on the body.
+Google Careers needs a QUERY because its search is server-side; the ATS
+boards return everything, so -q is optional.
 
 With --save, each surviving posting is written to private/jd/<slug>.txt,
 which is gitignored and is exactly what ./jd-match expects:
 
-    ./jd-match private/jd/customer-engineer-cloud-ai-ai-natives.txt
+    ./jd-match private/jd/databricks-solutions-architect.txt
 
 Postings turn over quickly; re-run rather than trusting an old listing.
 Stdlib only, no third-party packages.
@@ -27,13 +38,21 @@ import re
 import sys
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent
 JD_DIR = REPO / "private" / "jd"
+BOARDS_FILE = REPO / "boards.txt"
 BASE = "https://www.google.com/about/careers/applications/jobs/results"
 UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/140.0 Safari/537.36")
+
+ATS = {
+    "greenhouse": "https://boards-api.greenhouse.io/v1/boards/{}/jobs?content=true",
+    "ashby": "https://api.ashbyhq.com/posting-api/job-board/{}",
+    "lever": "https://api.lever.co/v0/postings/{}?mode=json",
+}
 
 
 def get(url: str) -> str:
@@ -42,9 +61,20 @@ def get(url: str) -> str:
         return r.read().decode("utf-8", errors="replace")
 
 
+def get_json(url: str):
+    return json.loads(get(url))
+
+
 def strip_tags(x: str) -> str:
     return html.unescape(re.sub(r"<[^>]+>", " ", x)).strip().strip(";").strip()
 
+
+def slugify(*parts) -> str:
+    s = "-".join(p for p in parts if p).lower()
+    return re.sub(r"-{2,}", "-", re.sub(r"[^a-z0-9]+", "-", s)).strip("-")[:90]
+
+
+# --------------------------------------------------------------- Google Careers
 
 def parse_cards(page: str) -> dict:
     """Pull the result cards out of a search-results page.
@@ -65,11 +95,11 @@ def parse_cards(page: str) -> dict:
         level = re.search(r'aria-label="([^,"]+), Learn more about experience',
                           block)
         found[jid] = {
-            "id": jid,
+            "company": "Google",
             "title": strip_tags(title.group(1)) if title else "",
-            "locations": [strip_tags(s) for s in re.findall(
+            "location": "; ".join(strip_tags(s) for s in re.findall(
                 r'<span class="r0wTof[^"]*">(.*?)</span>',
-                locs.group(1) if locs else "", re.S)],
+                locs.group(1) if locs else "", re.S)),
             "level": level.group(1) if level else "",
             "url": f"{BASE}/{jid}-{slugs.get(jid, '')}",
             "slug": slugs.get(jid, jid),
@@ -104,7 +134,7 @@ def walk(obj):
 
 
 def description(url: str) -> str:
-    """Full posting text for one job.
+    """Full posting text for one Google job.
 
     A job page embeds several postings (the target plus related roles).
     AF_dataServiceRequests names ds:0 as the one the URL asked for, so read
@@ -129,63 +159,165 @@ def description(url: str) -> str:
     return "\n\n".join(parts)
 
 
+# ------------------------------------------------------------------ ATS boards
+
+def load_boards() -> list:
+    if not BOARDS_FILE.exists():
+        sys.exit(f"No {BOARDS_FILE.name}. It lists: PROVIDER TOKEN [Display Name]")
+    rows = []
+    for line in BOARDS_FILE.read_text(encoding="utf-8").splitlines():
+        line = line.split("#")[0].strip()
+        if not line:
+            continue
+        parts = line.split()
+        provider, token = parts[0].lower(), parts[1]
+        if provider not in ATS:
+            print(f"  ! unknown provider {provider!r} in boards.txt", file=sys.stderr)
+            continue
+        rows.append((provider, token, " ".join(parts[2:]) or token))
+    return rows
+
+
+def fetch_board(board) -> list:
+    """Normalise one company's board into our common posting shape."""
+    provider, token, name = board
+    try:
+        data = get_json(ATS[provider].format(token))
+    except Exception as exc:
+        print(f"  ! {name} ({provider}/{token}): {exc}", file=sys.stderr)
+        return []
+    out = []
+    if provider == "greenhouse":
+        for j in data.get("jobs", []):
+            out.append({"title": j.get("title") or "",
+                        "location": (j.get("location") or {}).get("name") or "",
+                        "url": j.get("absolute_url") or "",
+                        "text": strip_tags(j.get("content") or "")})
+    elif provider == "ashby":
+        for j in data.get("jobs", []):
+            if j.get("isListed") is False:
+                continue
+            locs = [j.get("location") or ""] + [
+                s if isinstance(s, str) else (s or {}).get("location", "")
+                for s in (j.get("secondaryLocations") or [])]
+            if j.get("isRemote"):
+                locs.append("Remote")
+            out.append({"title": j.get("title") or "",
+                        "location": "; ".join(x for x in locs if x),
+                        "url": j.get("jobUrl") or j.get("applyUrl") or "",
+                        "text": j.get("descriptionPlain") or ""})
+    elif provider == "lever":
+        for j in data:
+            cats = j.get("categories") or {}
+            out.append({"title": j.get("text") or "",
+                        "location": cats.get("location") or "",
+                        "url": j.get("hostedUrl") or j.get("applyUrl") or "",
+                        "text": j.get("descriptionPlain") or ""})
+    for row in out:
+        row["company"] = name
+        row["level"] = ""
+        row["slug"] = slugify(name, row["title"])
+    return [r for r in out if r["title"]]
+
+
+def all_board_postings() -> list:
+    boards = load_boards()
+    rows = []
+    with ThreadPoolExecutor(8) as ex:
+        for got in ex.map(fetch_board, boards):
+            rows += got
+    print(f"boards scanned:      {len(boards)}")
+    return rows
+
+
+# --------------------------------------------------------------------- shared
+
+def report(rows, terms, save, show_company):
+    if terms:
+        scored = []
+        for r in rows:
+            low = (r.get("text") or "").lower()
+            hits = {t: low.count(t) for t in terms if low.count(t)}
+            if hits:
+                scored.append({**r, "hits": hits, "score": sum(hits.values())})
+        print(f"mentioning {'/'.join(terms)}: {len(scored)}")
+        rows = scored
+    else:
+        rows = [{**r, "hits": {}, "score": 0} for r in rows]
+    rows.sort(key=lambda r: (-r["score"], r["title"]))
+
+    for r in rows:
+        head = f"* {r['title']}"
+        if show_company:
+            head += f"  —  {r['company']}"
+        if r.get("level"):
+            head += f"  [{r['level']}]"
+        print("\n" + head)
+        print(f"    {r['location']}")
+        if r["hits"]:
+            print("    hits: " + ", ".join(
+                f"{t} x{n}" for t, n in sorted(r["hits"].items(),
+                                               key=lambda kv: -kv[1])))
+        print(f"    {r['url']}")
+        if save and r.get("text"):
+            JD_DIR.mkdir(parents=True, exist_ok=True)
+            path = JD_DIR / f"{r['slug']}.txt"
+            path.write_text(f"{r['title']}\n{r['company']}\n{r['location']}\n"
+                            f"{r['url']}\n\n{r['text']}\n", encoding="utf-8")
+            print(f"    saved: {path.relative_to(REPO)}")
+    if save:
+        print("\nNext: ./jd-match private/jd/<slug>.txt")
+    return rows
+
+
 def main():
     ap = argparse.ArgumentParser(add_help=False)
     ap.add_argument("queries", nargs="*")
+    ap.add_argument("--boards", action="store_true")
+    ap.add_argument("-q", "--title", nargs="*", default=[])
     ap.add_argument("-l", "--location", default="")
     ap.add_argument("-m", "--match", nargs="*", default=[])
     ap.add_argument("-n", "--pages", type=int, default=4)
     ap.add_argument("--save", action="store_true")
     ap.add_argument("-h", "--help", action="store_true")
     args = ap.parse_args()
-    if args.help or not args.queries:
+    if args.help or (not args.boards and not args.queries):
         sys.exit(__doc__)
+
+    terms = [t.lower() for t in args.match]
+
+    if args.boards:
+        rows = all_board_postings()
+        print(f"postings found:      {len(rows)}")
+        if args.title:
+            pat = re.compile("|".join(re.escape(t) for t in args.title), re.I)
+            rows = [r for r in rows if pat.search(r["title"])]
+            print(f"title matches:       {len(rows)}")
+        if args.location:
+            loc = args.location.split(",")[0].strip().lower()
+            rows = [r for r in rows if loc in r["location"].lower()]
+            print(f"in {args.location.split(',')[0].strip()}: {len(rows)}")
+        if not rows:
+            sys.exit("No postings matched.")
+        report(rows, terms, args.save, show_company=True)
+        return
 
     jobs = {}
     for q in args.queries:
         jobs.update(search(q, args.location, args.pages))
     print(f"postings found:      {len(jobs)}")
-
     if args.location:
         city = args.location.split(",")[0].strip()
         jobs = {k: v for k, v in jobs.items()
-                if any(city.lower() in loc.lower() for loc in v["locations"])}
+                if city.lower() in v["location"].lower()}
         print(f"actually in {city}:  {len(jobs)}")
     if not jobs:
         sys.exit("No postings matched.")
-
-    terms = [t.lower() for t in args.match]
-    rows = []
-    for job in jobs.values():
-        text = description(job["url"]) if (terms or args.save) else ""
-        low = text.lower()
-        hits = {t: low.count(t) for t in terms if low.count(t)}
-        rows.append({**job, "text": text, "hits": hits,
-                     "score": sum(hits.values())})
-
-    if terms:
-        scored = [r for r in rows if r["score"]]
-        print(f"mentioning {'/'.join(terms)}: {len(scored)}")
-        rows = scored or rows
-    rows.sort(key=lambda r: (-r["score"], r["title"]))
-
-    for r in rows:
-        print(f"\n* {r['title']}" + (f"  [{r['level']}]" if r["level"] else ""))
-        print(f"    {'; '.join(r['locations'])}")
-        if r["hits"]:
-            print("    hits: " + ", ".join(
-                f"{t} x{n}" for t, n in sorted(r["hits"].items(),
-                                               key=lambda kv: -kv[1])))
-        print(f"    {r['url']}")
-        if args.save and r["text"]:
-            JD_DIR.mkdir(parents=True, exist_ok=True)
-            path = JD_DIR / f"{r['slug']}.txt"
-            path.write_text(f"{r['title']}\n{'; '.join(r['locations'])}\n"
-                            f"{r['url']}\n\n{r['text']}\n", encoding="utf-8")
-            print(f"    saved: {path.relative_to(REPO)}")
-
-    if args.save:
-        print("\nNext: ./jd-match private/jd/<slug>.txt")
+    rows = list(jobs.values())
+    if terms or args.save:
+        for r in rows:
+            r["text"] = description(r["url"])
+    report(rows, terms, args.save, show_company=False)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,38 @@
+# Job boards for `./jd-search --boards`, one per line: PROVIDER TOKEN [Display Name]
+# Verified live 2026-09-16. If a board starts returning nothing, the company
+# changed ATS -- re-probe rather than assuming the tool broke.
+
+# --- data / cloud platforms ---
+greenhouse  databricks    Databricks
+ashby       snowflake     Snowflake
+greenhouse  mongodb       MongoDB
+greenhouse  datadog       Datadog
+greenhouse  cloudflare    Cloudflare
+greenhouse  elastic       Elastic
+greenhouse  neo4j         Neo4j
+ashby       clickhouse    ClickHouse
+greenhouse  vercel        Vercel
+
+# --- AI labs / model providers ---
+greenhouse  anthropic     Anthropic
+ashby       openai        OpenAI
+ashby       cohere        Cohere
+ashby       perplexity    Perplexity
+greenhouse  scaleai       Scale AI
+ashby       runway        Runway
+
+# --- inference / serving / GPU infra (closest to the TPU & vLLM work) ---
+ashby       baseten       Baseten
+ashby       fireworks     Fireworks AI
+ashby       modal         Modal
+ashby       anyscale      Anyscale
+greenhouse  togetherai    Together AI
+ashby       cerebras      Cerebras
+greenhouse  nebius        Nebius
+ashby       crusoe        Crusoe
+
+# --- agent / vector / speech tooling ---
+ashby       langchain     LangChain
+ashby       pinecone      Pinecone
+ashby       deepgram      Deepgram
+greenhouse  assemblyai    AssemblyAI

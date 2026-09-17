@@ -51,3 +51,9 @@ For a specific job posting: save the posting to `private/jd/<company>.txt` (`./j
   stable `ssk='17:<id>'` markers and `ds:0` payload rather than Google's obfuscated
   CSS class names, which change between builds — if it returns 0 postings, that
   markup moved. Postings turn over fast; re-run instead of trusting saved output.
+- `./jd-search --boards` reads `boards.txt` and pulls every posting from those
+  companies' Greenhouse / Ashby / Lever job boards (open JSON, no key). `-q` filters
+  on title, `-m` ranks on body text. Ashby reports headquarters in `location` and
+  the real cities in `secondaryLocations`, so trust the tool's merged location line
+  over any single field. A board returning nothing means that company changed ATS —
+  re-probe its token rather than assuming the tool broke.
