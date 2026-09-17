@@ -3,7 +3,7 @@
 
 Usage:
     ./jd-search QUERY [QUERY ...] [-l LOCATION] [-m TERM ...] [-n PAGES] [--save]
-    ./jd-search --boards [-q WORD ...] [-l LOCATION] [-m TERM ...] [--save]
+    ./jd-search --boards [-q WORD ...] [-l LOC] [-m TERM ...] [--min-pay N] [--save]
 
 Two sources. Without --boards it searches Google Careers. With --boards it
 reads boards.txt and pulls every posting from those companies' applicant
@@ -18,6 +18,11 @@ than by eye — the output is meant to be quoted, not re-tallied.
     ./jd-search "customer engineer AI" -l "New York, NY, USA" -m agent agentic
     ./jd-search --boards -l "New York" -m kubernetes inference vllm tpu
     ./jd-search --boards -q "solutions architect" "developer advocate" --save
+
+--min-pay keeps only postings whose stated top-of-band reaches it. New York
+City's pay-transparency law means most NYC postings carry a real range;
+postings that state none are dropped by the filter and counted separately,
+so a quiet posting is never silently treated as underpaying.
 
 -q filters board postings by words in the job title; -m ranks on the body.
 Google Careers needs a QUERY because its search is server-side; the ATS
@@ -50,7 +55,7 @@ UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
 
 ATS = {
     "greenhouse": "https://boards-api.greenhouse.io/v1/boards/{}/jobs?content=true",
-    "ashby": "https://api.ashbyhq.com/posting-api/job-board/{}",
+    "ashby": "https://api.ashbyhq.com/posting-api/job-board/{}?includeCompensation=true",
     "lever": "https://api.lever.co/v0/postings/{}?mode=json",
 }
 
@@ -159,6 +164,49 @@ def description(url: str) -> str:
     return "\n\n".join(parts)
 
 
+
+# ---------------------------------------------------------------------- pay
+
+MONEY = re.compile(r"\$\s?([\d][\d,]{2,})")
+
+
+def _plausible(n):
+    """Annual salary figures only -- drops hourly rates and contract values."""
+    return 30_000 <= n <= 2_000_000
+
+
+def pay_from_text(text: str):
+    vals = sorted({int(m.replace(",", "")) for m in MONEY.findall(text or "")})
+    vals = [v for v in vals if _plausible(v)]
+    return (vals[0], vals[-1]) if vals else None
+
+
+def pay_from_ashby(job: dict):
+    """USD annual salary components only.
+
+    A posting can carry several tiers for several regions and currencies --
+    the Singapore tier on a New York role is not the number we want.
+    """
+    vals = []
+    comp = job.get("compensation") or {}
+    for tier in comp.get("compensationTiers") or []:
+        for c in tier.get("components") or []:
+            if (c.get("compensationType") != "Salary"
+                    or c.get("currencyCode") != "USD"
+                    or "YEAR" not in str(c.get("interval") or "").upper()):
+                continue
+            vals += [v for v in (c.get("minValue"), c.get("maxValue"))
+                     if isinstance(v, (int, float)) and _plausible(v)]
+    return (int(min(vals)), int(max(vals))) if vals else None
+
+
+def fmt_pay(band):
+    if not band:
+        return "pay not stated"
+    lo, hi = band
+    return f"${lo:,} - ${hi:,}" if lo != hi else f"${lo:,}"
+
+
 # ------------------------------------------------------------------ ATS boards
 
 def load_boards() -> list:
@@ -189,10 +237,11 @@ def fetch_board(board) -> list:
     out = []
     if provider == "greenhouse":
         for j in data.get("jobs", []):
+            text = strip_tags(j.get("content") or "")
             out.append({"title": j.get("title") or "",
                         "location": (j.get("location") or {}).get("name") or "",
                         "url": j.get("absolute_url") or "",
-                        "text": strip_tags(j.get("content") or "")})
+                        "text": text, "pay": pay_from_text(text)})
     elif provider == "ashby":
         for j in data.get("jobs", []):
             if j.get("isListed") is False:
@@ -202,17 +251,20 @@ def fetch_board(board) -> list:
                 for s in (j.get("secondaryLocations") or [])]
             if j.get("isRemote"):
                 locs.append("Remote")
+            text = j.get("descriptionPlain") or ""
             out.append({"title": j.get("title") or "",
                         "location": "; ".join(x for x in locs if x),
                         "url": j.get("jobUrl") or j.get("applyUrl") or "",
-                        "text": j.get("descriptionPlain") or ""})
+                        "text": text,
+                        "pay": pay_from_ashby(j) or pay_from_text(text)})
     elif provider == "lever":
         for j in data:
             cats = j.get("categories") or {}
+            text = j.get("descriptionPlain") or ""
             out.append({"title": j.get("text") or "",
                         "location": cats.get("location") or "",
                         "url": j.get("hostedUrl") or j.get("applyUrl") or "",
-                        "text": j.get("descriptionPlain") or ""})
+                        "text": text, "pay": pay_from_text(text)})
     for row in out:
         row["company"] = name
         row["level"] = ""
@@ -232,7 +284,13 @@ def all_board_postings() -> list:
 
 # --------------------------------------------------------------------- shared
 
-def report(rows, terms, save, show_company):
+def report(rows, terms, save, show_company, min_pay=0):
+    if min_pay:
+        kept = [r for r in rows if (r.get("pay") or (0, 0))[1] >= min_pay]
+        quiet = sum(1 for r in rows if not r.get("pay"))
+        print(f"paying {min_pay:,}+:      {len(kept)}"
+              f"   ({quiet} of {len(rows)} state no range)")
+        rows = kept
     if terms:
         scored = []
         for r in rows:
@@ -254,6 +312,7 @@ def report(rows, terms, save, show_company):
             head += f"  [{r['level']}]"
         print("\n" + head)
         print(f"    {r['location']}")
+        print(f"    {fmt_pay(r.get('pay'))}")
         if r["hits"]:
             print("    hits: " + ", ".join(
                 f"{t} x{n}" for t, n in sorted(r["hits"].items(),
@@ -278,6 +337,7 @@ def main():
     ap.add_argument("-l", "--location", default="")
     ap.add_argument("-m", "--match", nargs="*", default=[])
     ap.add_argument("-n", "--pages", type=int, default=4)
+    ap.add_argument("--min-pay", type=int, default=0)
     ap.add_argument("--save", action="store_true")
     ap.add_argument("-h", "--help", action="store_true")
     args = ap.parse_args()
@@ -299,7 +359,7 @@ def main():
             print(f"in {args.location.split(',')[0].strip()}: {len(rows)}")
         if not rows:
             sys.exit("No postings matched.")
-        report(rows, terms, args.save, show_company=True)
+        report(rows, terms, args.save, show_company=True, min_pay=args.min_pay)
         return
 
     jobs = {}
@@ -317,7 +377,8 @@ def main():
     if terms or args.save:
         for r in rows:
             r["text"] = description(r["url"])
-    report(rows, terms, args.save, show_company=False)
+            r["pay"] = pay_from_text(r["text"])
+    report(rows, terms, args.save, show_company=False, min_pay=args.min_pay)
 
 
 if __name__ == "__main__":
