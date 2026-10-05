@@ -95,8 +95,9 @@ IBM, Global
 
 ### Speaking & Community Leadership
 
+* **Speaker | GDG Queens NY DevFest - AI on Edge | Oct 2026:** Featured talk, **"Gemma 4 Tips and Tricks"**.  
 * **Speaker | LLM Day NYC | June 2026:** Live demo and talk on **Gemma 4**.  
-* **Keynote Speaker | Hack Michigan - Way Back Home | May 2026:** Keynote on multimodal, real-time AI agent development.  
+* **Keynote Speaker | Hack Michigan - Way Back Home | May 2026:** Keynote on multimodal, real-time AI agents.  
 * **Keynote Speaker | Build with AI - Way Back Home | March 2026:** Keynote on AI agent development and the evolution of the software agent paradigm.  
 * **Speaker | UofT Build with AI, GDGoC UofT Scarborough | Mar 2026:** Presented **Multimodal ADK with Live Models**.  
 * **Speaker | Agent Glow Hackathon | Mar 2026:** Presented **Multimodal Gemini Live** and Vertex AI integration.  

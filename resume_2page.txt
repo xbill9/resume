@@ -101,12 +101,13 @@ production Rust MCP servers on Cloud Run with Identity-Aware Proxy.
 Speaking & Community Leadership
 
 
+
 
 
-Keynotes: Hack Michigan (May 2026) and Build with AI - Way Back Home (Mar 2026) — multimodal, real-time AI agent
-development.
-Talks & Demos: LLM Day NYC (Gemma 4, Jun 2026); UofT Build with AI (Multimodal ADK, Mar 2026); Agent Glow
-Hackathon (Gemini Live, Mar 2026); Detroit Black History Month Innovation Summit (LLM Deployment, Feb 2026).
+Keynotes: Hack Michigan (May 2026) and Build with AI - Way Back Home (Mar 2026) on multimodal AI agents.
+Talks & Demos: GDG Queens DevFest (Gemma 4 Tips and Tricks, Oct 2026); LLM Day NYC (Gemma 4, Jun 2026); UofT
+Build with AI (Multimodal ADK, Mar 2026); Agent Glow Hackathon (Gemini Live, Mar 2026); Detroit Black History
+Month Innovation Summit (LLM Deployment, Feb 2026).
 Workshops & Mentoring: Build with AI (GDG Queens, DevFest Brooklyn/Queens); Agentic AI Conference; Technical
 Mentor at Agentverse NYC and Build with AI NYC.
 
