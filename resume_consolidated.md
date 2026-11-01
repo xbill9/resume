@@ -8,7 +8,7 @@ LinkedIn: [linkedin.com/in/xbill](https://www.linkedin.com/in/xbill) | GitHub: [
 
 ### Professional Summary
 
-Developer Relations leader and CTO who has been **building software agents for 30+ years** — from IBM's agent-oriented OPC Tracker Agent (1992) and a master's thesis on extensible agent technology to production agentic AI systems built on Gemini, Vertex AI, the Model Context Protocol (MCP), and the A2A protocol. **Google Cloud Ambassador, Google Developer Expert (GDE) for AI and Cloud, AWS Community Builder (AI Engineer category), and Google TPU Builders participant**, holding 9 Google Cloud certifications. Published the **first community port of Gemma 4 to AWS Inferentia2 hardware** (Hugging Face). Author of **300+ technical articles** and 170+ open-source repositories spanning multi-agent systems, LLM serving on Cloud TPU and GPUs, and agentic coding tools including Claude Code, OpenAI Codex, and Gemini CLI.
+Developer Relations leader and CTO who has been **building software agents for 30+ years** — from IBM's agent-oriented OPC Tracker Agent (1992) and a master's thesis on extensible agent technology to production agentic AI systems built on Gemini, Vertex AI, the Model Context Protocol (MCP), and the A2A protocol. **Google Cloud Ambassador, Google Developer Expert (GDE) for AI and Cloud, AWS Community Builder (AI Engineer category), and Google TPU Builders participant**, holding 10 Google Cloud certifications. Published the **first community port of Gemma 4 to AWS Inferentia2 hardware** (Hugging Face). Author of **300+ technical articles** and 170+ open-source repositories spanning multi-agent systems, LLM serving on Cloud TPU and GPUs, and agentic coding tools including Claude Code, OpenAI Codex, and Gemini CLI.
 
 ---
 
@@ -32,7 +32,7 @@ Developer Relations leader and CTO who has been **building software agents for 3
 * **TPU Builders (Google):** Deploy and benchmark Gemma-family models on Cloud TPU v6e as part of Google's TPU Builders program; publish TPU deployment guides and open-source MCP tooling for the community.  
 * **AWS Community Builder (2026):** Selected for the AI Engineer Category; five-time AWS Community Builder Spotlight honoree ([5-Timers Club](https://builder.aws.com/content/3GEF40vhcrWyM95JyVov8VHbEa7/aws-cb-spotlight-5-timers-club-william-mclean)).  
 * **dev.to Top Azure Author:** Awarded the dev.to Azure badge, given to the top Azure author each week ([dev.to/xbill](https://dev.to/xbill)).  
-* **Google Cloud Certified (9x):** Professional Machine Learning Engineer, Generative AI Leader, Cloud Architect, Data Engineer, DevOps Engineer, Cloud Developer, Cloud Security Engineer, Associate Cloud Engineer, Digital Leader.  
+* **Google Cloud Certified (10x):** Professional Agentic Architect ([beta first cohort, certificate series #166](https://www.credly.com/badges/8b181253-b785-4a40-8668-791673b44819/public_url)), Professional Machine Learning Engineer, Generative AI Leader, Cloud Architect, Data Engineer, DevOps Engineer, Cloud Developer, Cloud Security Engineer, Associate Cloud Engineer, Digital Leader.  
 * **Google Cloud Partner Certifications (2026):** Gemini Enterprise Deployment (secure environment configuration, Google Workspace data integration, Model Armor, search governance) and Gemini Enterprise Agent Development (AI agent development, API integration, prompt tuning, Antigravity IDE).
 
 ---
