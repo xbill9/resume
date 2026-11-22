@@ -13,3 +13,6 @@ what William has stated; keep the date.
 * Remote software engineering (2026-11-20: 10 years)
 * Seed / Series A/B startups (2026-11-20: 5 years)
 * SGLang (2026-11-22; dev.to: "Porting Gemma 4 E2B to SGLang-JAX on One Cloud TPU v5e", 2026-11-09, and the Six/Five Serving Engines benchmarks, 2026-11-06 to 2026-11-19)
+* llama.cpp (2026-11-22; dev.to serving-engine benchmarks, 2026-11-06 to 2026-11-19)
+* JAX (2026-11-22; dev.to: "Porting Gemma 4 E2B to SGLang-JAX on One Cloud TPU v5e", 2026-11-09, and the serving-engine benchmarks)
+* PyTorch (2026-11-22; dev.to serving-engine benchmarks; also in the master resume)
