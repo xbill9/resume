@@ -12,3 +12,4 @@ what William has stated; keep the date.
 * LLM-as-judge evaluation (answers.md: used with agents)
 * Remote software engineering (2026-11-20: 10 years)
 * Seed / Series A/B startups (2026-11-20: 5 years)
+* SGLang (2026-11-22; dev.to: "Porting Gemma 4 E2B to SGLang-JAX on One Cloud TPU v5e", 2026-11-09, and the Six/Five Serving Engines benchmarks, 2026-11-06 to 2026-11-19)
