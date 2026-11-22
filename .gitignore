@@ -1,3 +1,4 @@
 # Full-contact versions for actual applications — never commit
 PRIVATE_CONTACT
 private/
+__pycache__/
