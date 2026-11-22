@@ -41,6 +41,10 @@ This repo is **public**. Committed files carry only email + city/state/ZIP — n
 
 For a specific job posting: save the posting to `private/jd/<company>.txt` (`./jd-search ... --save` fetches Google Careers postings straight into that directory), run `./jd-match private/jd/<company>.txt` to see covered vs. missing keywords, then copy `resume_2page.md` to a new file under `private/`, mirror the posting's job title in the headline line, add missing keywords **only where honest**, and build with `./make-resume private/<file>.md` — never edit the master for a one-off application.
 
+## Automated tailoring
+
+`./tailor-resume private/jd/<slug>.txt --title "<posting title>" --out <slug>` does the workflow above in one step for the jobHunt apply runs: headline mirrors the title, bullets are reordered by posting-term overlap, posting terms missing from the 2-pager are added as one "Also relevant" line **only** when the master's Core Competencies or `confirmed-skills.md` (skills William confirmed on application forms) holds them, plus same-thing ATS spellings (Golang for Go, APIs for API). To stay at 2 pages it drops the weakest publications/speaking/projects bullets, then trims the additions, then falls back to the base. Output goes to `private/tailored/`.
+
 ## Repo tooling
 
 - `hooks/pre-commit` (enabled via `git config core.hooksPath hooks`) blocks commits containing phone numbers or the street address, including inside .docx/.pdf binaries. If it fires, fix the content — never bypass with `--no-verify`.

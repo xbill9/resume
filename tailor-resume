@@ -1,0 +1,275 @@
+#!/usr/bin/env python3
+"""tailor-resume — build a job-specific 2-page resume from resume_2page.md.
+
+Usage:
+    ./tailor-resume posting.txt --title "Job Title" --out <slug> [--base resume_2page.md]
+
+Writes private/tailored/<slug>.md and builds .docx/.pdf/.txt next to it with
+./make-resume. Every change is drawn from William's own material:
+
+  1. Headline mirrors the posting's job title (CLAUDE.md tailoring workflow).
+  2. Bullets inside each section are reordered so the ones that share the most
+     terms with the posting come first. No bullet text changes.
+  3. Posting terms that the 2-pager lacks but the master resume
+     (resume_consolidated.md) lists under Core Competencies are added as one
+     "Also relevant" skills line, spelled as the master spells them. Nothing
+     outside the master's skills section is ever added.
+  4. The result must stay 2 pages; additions are trimmed until it does, and if
+     it still overflows the base resume is used unchanged.
+
+Prints keyword coverage before and after (jd-match scoring) as JSON on the
+last line so callers can parse it.
+"""
+import argparse
+import importlib.machinery
+import importlib.util
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent
+_loader = importlib.machinery.SourceFileLoader("jdmatch", str(REPO / "jd-match"))
+_spec = importlib.util.spec_from_loader("jdmatch", _loader)
+jdm = importlib.util.module_from_spec(_spec)
+_loader.exec_module(jdm)
+
+MASTER = REPO / "resume_consolidated.md"
+CONFIRMED = REPO / "confirmed-skills.md"
+MAX_ADD = 14
+
+# Posting spelling -> words that appear in William's own skill items.
+SYNONYMS = {
+    "golang": ["go"], "go": ["go"], "k8s": ["kubernetes"], "gke": ["kubernetes"],
+    "apis": ["api"], "api": ["api"], "rest": ["api"], "grpc": ["api"],
+    "llm": ["large language model"], "llms": ["large language model"],
+    "genai": ["generative ai"], "rag": ["retrieval-augmented"],
+    "javascript": ["javascript"], "javascript/typescript": ["javascript", "typescript"],
+    "js": ["javascript"], "ts": ["typescript"], "node": ["node.js"], "nodejs": ["node.js"],
+    "reactjs": ["react"], "gcp": ["google cloud"], "evals": ["evaluation"],
+    "evaluation": ["evaluation"], "benchmarking": ["benchmarking"],
+    "presales": ["pre-sales"], "pre-sales": ["pre-sales"], "sre": ["sre"],
+    "ml": ["machine learning", "mlops"], "agentic": ["agentic"], "agents": ["agents"],
+}
+
+
+def coverage(terms, text):
+    body = jdm.norm(text)
+    hit = [t for t in terms if t in body]
+    return hit, [t for t in terms if t not in body]
+
+
+def score(line, terms):
+    body = jdm.norm(line)
+    return sum(1 for t in terms if t in body)
+
+
+def reorder_bullets(md, terms):
+    """Stable-sort each contiguous run of '* ' bullets by JD term hits."""
+    out, run = [], []
+
+    def flush():
+        if run:
+            ranked = sorted(enumerate(run), key=lambda p: (-score(p[1], terms), p[0]))
+            lines = [l.rstrip() for _, l in ranked]
+            # markdown hard breaks: every bullet but the last ends with two spaces
+            out.extend([l + "  " for l in lines[:-1]] + [lines[-1]])
+            run.clear()
+
+    for line in md.splitlines():
+        if line.startswith("* ") and not line.startswith("* *Thesis"):
+            run.append(line)
+        else:
+            flush()
+            out.append(line)
+    flush()
+    return "\n".join(out) + "\n"
+
+
+def master_skill_items(master_md):
+    """Comma/semicolon-separated items from the master's Core Competencies section."""
+    m = re.search(r"### Core Competencies.*?\n(.*?)\n---", master_md, re.S)
+    if not m:
+        return []
+    items = []
+    for line in m.group(1).splitlines():
+        line = re.sub(r"^\*\s+\*\*[^*]+:\*\*\s*", "", line.strip())
+        for part in split_top(line):
+            part = part.strip(" .*")
+            if 2 <= len(part) <= 90 and part.count("(") == part.count(")"):
+                items.append(part)
+    return items
+
+
+def split_top(line):
+    """Split on , ; and ' — ' only outside parentheses."""
+    parts, buf, depth, i = [], "", 0, 0
+    while i < len(line):
+        c = line[i]
+        depth += (c == "(") - (c == ")")
+        if depth == 0 and (c in ",;" or line.startswith(" — ", i)):
+            parts.append(buf)
+            buf = ""
+            i += 3 if c == " " else 1
+            continue
+        buf += c
+        i += 1
+    return parts + [buf]
+
+
+# Same-thing spellings an ATS matches literally. Added only when the posting
+# uses the spelling and the resume already holds the underlying skill.
+ALIASES = {"golang": ("Golang", "go"), "k8s": ("K8s", "kubernetes"), "llms": ("LLMs", "llm"),
+           "apis": ("APIs", "api"), "gcp": ("GCP", "google cloud"), "genai": ("GenAI", "generative ai"),
+           "ai/ml": ("AI/ML", "machine learning"), "nodejs": ("Node.js", "node.js")}
+
+
+def confirmed_items():
+    if not CONFIRMED.exists():
+        return []
+    return [re.sub(r"\s*\(.*\)\s*$", "", l[2:]).strip()
+            for l in CONFIRMED.read_text(encoding="utf-8").splitlines() if l.startswith("* ")]
+
+
+def additions(missing, master_md, have_text):
+    """Skill items (master Core Competencies or confirmed-skills.md) that carry a
+    posting term the tailored text lacks."""
+    have = jdm.norm(have_text)
+    pool = master_skill_items(master_md) + confirmed_items()
+    picked = []
+    for term in missing:
+        if term in ALIASES:
+            label, need = ALIASES[term]
+            if re.search(r"(^| )" + re.escape(need) + r"( |$)", have) and label not in picked:
+                picked.append(label)
+                continue
+        keys = [term] + SYNONYMS.get(term, [])
+        for item in pool:
+            ni = jdm.norm(item)
+            if re.search(r"(^| )" + re.escape(ni) + r"( |$)", have) or item in picked:
+                continue
+            if any(re.search(r"(^| )" + re.escape(k) + r"( |$)", ni) for k in keys):
+                picked.append(item)
+                break
+    return picked
+
+
+def set_headline(md, title):
+    lines = md.splitlines()
+    for i, l in enumerate(lines):
+        if l.startswith("**") and i < 4:
+            lines[i] = (f"**{title} | AI Developer Advocate & CTO | "
+                        f"Google Developer Expert (GDE) AI/Cloud | AWS Community Builder**  ")
+            break
+    return "\n".join(lines) + "\n"
+
+
+def add_skill_line(md, items):
+    if not items:
+        return md
+    line = "* **Also relevant:** " + ", ".join(items) + "."
+    return re.sub(r"(### Core Competencies & Skills\n\n(?:\* .*\n)+)",
+                  lambda m: m.group(1).rstrip("\n") + "  \n" + line + "\n", md, count=1)
+
+
+TRIM_SECTIONS = ("### Publications", "### Speaking & Community Leadership", "### Open Source & AI Projects")
+
+
+def drop_weakest(md, terms):
+    """Remove the one bullet with the fewest posting terms from the low-stakes
+    sections (publications, speaking, projects). Returns (md, dropped_line)."""
+    lines, section, cands = md.splitlines(), "", []
+    for i, l in enumerate(lines):
+        if l.startswith("### "):
+            section = l.strip()
+        elif l.startswith("* ") and section in TRIM_SECTIONS:
+            cands.append((score(l, terms), -i, i))
+    # keep at least two bullets per section
+    per = {}
+    sec_of = {}
+    section = ""
+    for i, l in enumerate(lines):
+        if l.startswith("### "):
+            section = l.strip()
+        elif l.startswith("* ") and section in TRIM_SECTIONS:
+            per[section] = per.get(section, 0) + 1
+            sec_of[i] = section
+    cands = [c for c in cands if per[sec_of[c[2]]] > 2]
+    if not cands:
+        return md, None
+    _, _, idx = min(cands)
+    gone = lines.pop(idx)
+    if idx > 0 and lines[idx - 1].startswith("* ") and (idx >= len(lines) or not lines[idx].startswith("* ")):
+        lines[idx - 1] = lines[idx - 1].rstrip()
+    return "\n".join(lines) + "\n", gone
+
+
+def build(path):
+    r = subprocess.run([str(REPO / "make-resume"), str(path)], capture_output=True, text=True)
+    pages = re.search(r"Pages:\s+(\d+)", r.stdout)
+    return int(pages.group(1)) if pages else None, r
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("posting")
+    ap.add_argument("--title", required=True)
+    ap.add_argument("--out", required=True)
+    ap.add_argument("--base", default=str(REPO / "resume_2page.md"))
+    a = ap.parse_args()
+
+    slug = re.sub(r"[^a-z0-9]+", "-", a.out.lower()).strip("-")[:60]
+    outdir = REPO / "private" / "tailored"
+    outdir.mkdir(parents=True, exist_ok=True)
+    dest = outdir / f"{slug}.md"
+
+    base = Path(a.base).read_text(encoding="utf-8")
+    master = MASTER.read_text(encoding="utf-8")
+    terms = list(jdm.jd_terms(jdm.load(Path(a.posting))).keys())
+    if not terms:
+        sys.exit("No significant terms in the posting.")
+    before, missing = coverage(terms, base)
+
+    title = re.sub(r"\s+", " ", a.title).strip()[:70].replace("|", "-")
+    md = reorder_bullets(set_headline(base, title), terms)
+    adds = additions(missing, master, md)[:MAX_ADD]
+
+    pages, dropped = None, []
+    while True:
+        cand = add_skill_line(md, adds)
+        dest.write_text(cand, encoding="utf-8")
+        pages, r = build(dest)
+        if pages == 2 or not adds:
+            break
+        if len(dropped) < 3:
+            md, gone = drop_weakest(md, terms)
+            if gone:
+                dropped.append(gone[:60])
+                continue
+        adds = adds[: len(adds) // 2]
+    fallback = pages != 2
+    if fallback:  # headline + reorder alone overflowed: ship the base untouched
+        dest.write_text(base, encoding="utf-8")
+        pages, r = build(dest)
+        cand = base
+        adds = []
+
+    after, _ = coverage(terms, cand)
+    result = {
+        "pdf": str(dest.with_suffix(".pdf")),
+        "pages": pages,
+        "terms": len(terms),
+        "before": len(before),
+        "after": len(after),
+        "before_pct": round(100 * len(before) / len(terms)),
+        "after_pct": round(100 * len(after) / len(terms)),
+        "added": adds,
+        "dropped": dropped if adds else [],
+        "fallback_to_base": fallback,
+    }
+    print(json.dumps(result))
+
+
+if __name__ == "__main__":
+    main()
