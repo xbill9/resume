@@ -132,7 +132,18 @@ def confirmed_items():
             for l in CONFIRMED.read_text(encoding="utf-8").splitlines() if l.startswith("* ")]
 
 
-def additions(missing, master_md, have_text):
+def fits_posting(item, jd):
+    """At least half of the item's meaningful words appear in the posting, so a
+    generic posting word ("client", "authority") cannot pull in a whole skill."""
+    words = [w for w in jdm.norm(re.sub(r"\(.*?\)", " ", item)).split()
+             if len(w) >= 3 and w not in jdm.STOP]
+    if not words:
+        return True
+    hits = sum(1 for w in words if re.search(r"(^| )" + re.escape(w) + r"( |$)", jd))
+    return hits == len(words) if len(words) <= 2 else hits * 2 >= len(words)
+
+
+def additions(missing, master_md, have_text, jd=""):
     """Skill items (master Core Competencies or confirmed-skills.md) that carry a
     posting term the tailored text lacks."""
     have = jdm.norm(have_text)
@@ -149,7 +160,7 @@ def additions(missing, master_md, have_text):
             ni = jdm.norm(item)
             if re.search(r"(^| )" + re.escape(ni) + r"( |$)", have) or item in picked:
                 continue
-            if any(re.search(r"(^| )" + re.escape(k) + r"( |$)", ni) for k in keys):
+            if any(re.search(r"(^| )" + re.escape(k) + r"( |$)", ni) for k in keys) and (not jd or fits_posting(item, jd)):
                 picked.append(item)
                 break
     return picked
@@ -233,7 +244,7 @@ def main():
 
     title = re.sub(r"\s+", " ", a.title).strip()[:70].replace("|", "-")
     md = reorder_bullets(set_headline(base, title), terms)
-    adds = additions(missing, master, md)[:MAX_ADD]
+    adds = additions(missing, master, md, jdm.load(Path(a.posting)))[:MAX_ADD]
 
     pages, dropped = None, []
     while True:
